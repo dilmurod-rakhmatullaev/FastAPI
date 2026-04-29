@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library - Books List</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .book-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+        }
+
+        .book-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        .book-author {
+            font-size: 1.1rem;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .book-year {
+            font-size: 1rem;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .book-id {
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-top: 10px;
+            text-align: right;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+            padding: 40px;
+        }
+
+        .error {
+            background: #ff6b6b;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .empty {
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+            padding: 40px;
+        }
+
+        .footer {
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            margin-top: 30px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Library</h1>
+        <div id="books-container" class="books-grid">
+            <div class="loading">Loading books...</div>
+        </div>
+        <div class="footer">
+            Data retrieved from FastAPI backend
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:8000/books';
+
+        async function fetchBooks() {
+            const container = document.getElementById('books-container');
+
+            try {
+                // Show loading indicator
+                container.innerHTML = '<div class="loading">📖 Loading books...</div>';
+
+                // Request to backend
+                const response = await fetch(API_URL);
+
+                // Check response status
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Parse JSON
+                const books = await response.json();
+
+                // Display books
+                displayBooks(books);
+
+            } catch (error) {
+                console.error('Error loading books:', error);
+                container.innerHTML = `
+                    <div class="error">
+                        ❌ Failed to connect to server<br>
+                        Make sure the backend is running on ${API_URL}<br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function displayBooks(books) {
+            const container = document.getElementById('books-container');
+
+            if (!books || books.length === 0) {
+                container.innerHTML = '<div class="empty">📭 No books in the library yet</div>';
+                return;
+            }
+
+            // Sort books by ID
+            const sortedBooks = [...books].sort((a, b) => a.id - b.id);
+
+            // Generate HTML for each book
+            const booksHTML = sortedBooks.map(book => `
+                <div class="book-card">
+                    <div class="book-title">📖 ${escapeHtml(book.title)}</div>
+                    <div class="book-author">✍️ Author: ${escapeHtml(book.author)}</div>
+                    <div class="book-year">📅 Year: ${book.year}</div>
+                    <div class="book-id">🆔 ID: ${book.id}</div>
+                </div>
+            `).join('');
+
+            container.innerHTML = booksHTML;
+        }
+
+        // Simple HTML escaping function (security)
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // Load books when page loads
+        fetchBooks();
+    </script>
+</body>
+</html>
